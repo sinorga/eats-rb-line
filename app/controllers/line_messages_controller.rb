@@ -4,9 +4,13 @@ class LineMessagesController < ApplicationController
 
   def incoming
     events.each do |event|
-      case event
-      when Line::Bot::Event::Message then msg_event_handler(event)
-      end
+      resp = case event
+             when Line::Bot::Event::Message then msg_event_handler(event)
+             when Line::Bot::Event::Follow then follow_event_handler(event)
+             when Line::Bot::Event::Unfollow then unfollow_event_handler(event)
+             when Line::Bot::Event::Postback then postback_event_handler(event)
+             end
+      logger.error "response: #{resp.code}" if resp && resp.code != 200
     end
 
     head :ok
@@ -22,10 +26,7 @@ class LineMessagesController < ApplicationController
   end
 
   def client
-    @client ||= Line::Bot::Client.new { |config|
-      config.channel_secret = ENV['LINE_CH_SECRET']
-      config.channel_token = ENV['LINE_CH_ACCESS_TOKEN']
-    }
+    @client ||= LineBot::Client.new
   end
 
   def events
@@ -35,8 +36,37 @@ class LineMessagesController < ApplicationController
   def msg_event_handler(event)
     case event.type
     when Line::Bot::Event::MessageType::Text
-      message = { type: 'text', text: event.message['text'] }
-      client.reply_message(event['replyToken'], message)
+      unless ignore_message(event.message['text'])
+        message = { type: 'text', text: "供三小#{event.message['text']}\n吃飯了Ｒ" }
+        client.reply_message(event['replyToken'], message)
+      end
+    else
+      unknown_handler(event)
     end
+  end
+
+  def follow_event_handler(event)
+    # TODO: Store user's id and info to DB
+    message = { type: 'text', text: '歡迎光臨，吃好吃滿，頭好壯壯！' }
+    client.reply_message(event['replyToken'], message)
+  end
+
+  def unfollow_event_handler(event)
+    # TODO: remove user from DB
+
+  end
+
+  def postback_event_handler(event)
+    logger.info event['postback']['data']
+    nil
+  end
+
+  def unknown_handler(event)
+    message = { type: 'text', text: '林北跨謀，說人話！' }
+    client.reply_message(event['replyToken'], message)
+  end
+
+  def ignore_message(msg)
+    msg =~ /^我:/
   end
 end
