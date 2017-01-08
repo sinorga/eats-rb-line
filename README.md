@@ -1,2 +1,2 @@
-# line-bot-echo
-Simple echo bot on rails
+# eats-rb-line
+Line bot for eatting!!!!
