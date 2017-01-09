@@ -10,7 +10,7 @@ class EventsController < ApplicationController
     ]
 
     messages << gen_date_template
-
+    messages << { type: 'text', text: '如果找不到喜歡的請輸入 "/date [day]" 即可新增您有空的日期。' }
     # TODO: read all user id from db
     #'Ue2aee79ce164e30265ef965eec8472b6',
     users = ['U0a9ca05bee69c834566c61ad51ba55b5']
@@ -47,18 +47,19 @@ class EventsController < ApplicationController
 
   def gen_date_action(column_num, button_num)
     date = Date.today + (column_num * 3 + button_num).days
+    data = { action: 'select_date', date: date.day }
     {
       type: 'postback',
       label: date.to_s(:short),
       text: "我: #{date.to_s(:short)} 有空",
-      data: "action=select_date&date=#{date.day}"
+      data: data.to_json
     }
   end
 
   def default_date_template
     {
       type: 'template',
-      altText: 'To choose a date to eat together!',
+      altText: 'To choose a date to eat together! (請拿出手機)',
       template: {
         type: 'carousel',
         columns: []
